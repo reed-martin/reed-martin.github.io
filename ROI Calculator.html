@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROI Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #141720;
+    --border: #232636;
+    --accent: #c8f04a;
+    --accent-dim: rgba(200,240,74,0.12);
+    --accent-mid: rgba(200,240,74,0.25);
+    --text: #e8eaf0;
+    --muted: #6b7080;
+    --danger: #f04a6a;
+    --warning: #f0a84a;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+  }
+
+  header {
+    max-width: 900px;
+    margin: 0 auto 48px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+  }
+
+  .logo { display: flex; flex-direction: column; gap: 4px; }
+  .logo-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  h1 {
+    font-size: clamp(22px, 4vw, 32px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .subtitle {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.5;
+  }
+
+  .main { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-family: var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  label {
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  input, select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 10px 14px;
+    width: 100%;
+    transition: border-color 0.15s;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input:focus, select:focus { border-color: var(--accent); }
+  select option { background: var(--surface); }
+
+  .input-prefix {
+    position: relative;
+  }
+  .input-prefix span {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .input-prefix input { padding-left: 24px; }
+
+  .hint {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--muted);
+    opacity: 0.7;
+  }
+
+  /* Business case */
+  .biz-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .biz-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 10px 14px;
+    width: 100%;
+    resize: vertical;
+    min-height: 72px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); opacity: 0.6; }
+
+  /* Print button */
+  .toolbar {
+    display: flex;
+    justify-content: flex-end;
+    max-width: 900px;
+    margin: 0 auto -12px;
+  }
+  .btn-print {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-print:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Business case in results */
+  .biz-summary {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+  }
+  .biz-block { display: flex; flex-direction: column; gap: 6px; }
+  .biz-block-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .biz-block-text {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text);
+    opacity: 0.85;
+  }
+
+  @media print {
+    body { background: #fff; color: #000; padding: 20px; }
+    :root { --bg: #f5f5f5; --surface: #fff; --border: #ddd; --text: #111; --muted: #666; --accent: #5a8a00; }
+    .toolbar { display: none; }
+    .card, .biz-card, .results-card { border: 1px solid #ddd; }
+    input, select, textarea { border: 1px solid #ddd; background: #f9f9f9; color: #000; }
+  }
+
+  /* Results */
+  .results-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .results-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .results-title {
+    font-size: 11px;
+    font-family: var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .results-title::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .breakeven-pill {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 100px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-mid);
+    color: var(--accent);
+    transition: all 0.3s;
+  }
+  .breakeven-pill.negative { background: rgba(240,74,106,0.1); border-color: rgba(240,74,106,0.3); color: var(--danger); }
+  .breakeven-pill.never { background: rgba(107,112,128,0.1); border-color: rgba(107,112,128,0.3); color: var(--muted); }
+
+  .horizons {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    border-bottom: 1px solid var(--border);
+  }
+  .horizon-col {
+    padding: 20px 16px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: background 0.2s;
+  }
+  .horizon-col:last-child { border-right: none; }
+  .horizon-col.is-breakeven { background: var(--accent-dim); }
+  .horizon-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .horizon-value {
+    font-family: var(--mono);
+    font-size: clamp(13px, 1.5vw, 16px);
+    font-weight: 500;
+    line-height: 1.2;
+  }
+  .horizon-value.pos { color: var(--accent); }
+  .horizon-value.neg { color: var(--danger); }
+  .horizon-value.zero { color: var(--warning); }
+  .horizon-sub {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .chart-wrap {
+    padding: 24px;
+  }
+  .chart-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  #chart-svg { width: 100%; height: 140px; display: block; }
+
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--border);
+  }
+  .summary-item {
+    padding: 16px 24px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .summary-item:last-child { border-right: none; }
+  .summary-label { font-family: var(--mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .summary-val { font-family: var(--mono); font-size: 18px; font-weight: 500; }
+  .summary-val.pos { color: var(--accent); }
+  .summary-val.neg { color: var(--danger); }
+
+  .empty-state {
+    padding: 48px 24px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  @media (max-width: 640px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .horizons { grid-template-columns: repeat(3, 1fr); }
+    .horizons .horizon-col:nth-child(n+4) { display: none; }
+    .summary-row { grid-template-columns: 1fr; }
+    .summary-item { border-right: none; border-bottom: 1px solid var(--border); }
+    .summary-item:last-child { border-bottom: none; }
+    header { flex-direction: column; align-items: flex-start; }
+    .subtitle { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-tag">Valsoft · Portfolio Tool</span>
+    <h1>ROI Calculator</h1>
+  </div>
+  <div class="subtitle">
+    Headcount · Software · Compliance · Capex<br>
+    Breakeven & return horizon analysis
+  </div>
+</header>
+
+<div class="toolbar">
+  <button class="btn-print" onclick="window.print()">⎙ Save / Print</button>
+</div>
+
+<div class="main">
+
+  <!-- BUSINESS CASE -->
+  <div class="biz-card">
+    <div class="card-title">Business Case</div>
+    <div class="biz-grid" style="margin-top:0; margin-bottom:16px;">
+      <div class="field" style="margin-bottom:0">
+        <label>Your name</label>
+        <input type="text" id="submitter-name" placeholder="e.g. Jane Smith" oninput="calc()">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Company / business unit</label>
+        <input type="text" id="submitter-company" placeholder="e.g. WeSuite" oninput="calc()">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Investment name</label>
+        <input type="text" id="inv-label" placeholder="e.g. Head of Sales hire, SOC 2 cert" oninput="calc()">
+      </div>
+    </div>
+    <div class="biz-grid">
+      <div class="field" style="margin-bottom:0">
+        <label>What problem does this solve?</label>
+        <textarea id="biz-problem" placeholder="e.g. We're losing deals because we have no dedicated sales leadership and deals are stalling in late stages." oninput="calc()"></textarea>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>How does this investment fix it?</label>
+        <textarea id="biz-solution" placeholder="e.g. A Head of Sales will own pipeline, coach reps, and close enterprise deals we currently can't close without senior oversight." oninput="calc()"></textarea>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Key assumptions / risks</label>
+        <textarea id="biz-risks" placeholder="e.g. Assumes $40K/mo in new ARR by month 6. Risk: slower ramp if hiring takes 3+ months." oninput="calc()"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- COST INPUTS -->
+    <div class="card">
+      <div class="card-title">Investment / Cost</div>
+
+      <div class="field">
+        <label>One-time upfront cost</label>
+        <div class="input-prefix"><span>$</span><input type="number" id="cost-upfront" placeholder="0" value="0" oninput="calc()"></div>
+        <span class="hint">Implementation, setup, signing bonus, etc.</span>
+      </div>
+
+      <div class="field">
+        <label>Recurring monthly cost</label>
+        <div class="input-prefix"><span>$</span><input type="number" id="cost-monthly" placeholder="0" value="0" oninput="calc()"></div>
+        <span class="hint">Salary + benefits, SaaS fee, licensing, etc.</span>
+      </div>
+
+      <div class="field">
+        <label>Cost starts — month #</label>
+        <input type="number" id="cost-start" placeholder="1" value="1" min="1" oninput="calc()">
+        <span class="hint">Month the recurring cost kicks in (usually 1)</span>
+      </div>
+
+      <div class="field">
+        <label>Cost duration (months)</label>
+        <input type="number" id="cost-duration" placeholder="36" value="36" min="1" oninput="calc()">
+        <span class="hint">How long you expect to incur this cost</span>
+      </div>
+
+      <div class="field" style="flex-direction:row;align-items:center;gap:10px;background:rgba(240,168,74,0.07);border:1px solid rgba(240,168,74,0.2);border-radius:6px;padding:10px 14px;cursor:pointer" onclick="document.getElementById('perpetual').click()">
+        <input type="checkbox" id="perpetual" onchange="calc()" style="width:auto;accent-color:#f0a84a;cursor:pointer;flex-shrink:0">
+        <div>
+          <label for="perpetual" style="color:var(--warning);cursor:pointer;display:block;margin-bottom:2px">Perpetual / ongoing cost</label>
+          <span class="hint" style="opacity:1">Check if this cost never ends (e.g. SaaS subscription, headcount)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- REVENUE / BENEFIT INPUTS -->
+    <div class="card">
+      <div class="card-title">Revenue / Benefit</div>
+
+      <div class="field">
+        <label>Monthly revenue or savings generated</label>
+        <div class="input-prefix"><span>$</span><input type="number" id="rev-monthly" placeholder="0" value="0" oninput="calc()"></div>
+        <span class="hint">New ARR, cost savings, efficiency gains, etc.</span>
+      </div>
+
+      <div class="field">
+        <label>Revenue starts — month #</label>
+        <input type="number" id="rev-start" placeholder="1" value="1" min="1" oninput="calc()">
+        <span class="hint">Lag before benefit materializes (ramp period)</span>
+      </div>
+
+      <div class="field">
+        <label>Ramp-up months (optional)</label>
+        <input type="number" id="rev-ramp" placeholder="0" value="0" min="0" oninput="calc()">
+        <span class="hint">Months to reach full run rate from start month</span>
+      </div>
+
+      <div class="field">
+        <label>Revenue / benefit type</label>
+        <select id="rev-type" onchange="calc()">
+          <option value="recurring">Recurring (monthly)</option>
+          <option value="onetime">One-time</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>COGS % of revenue (optional)</label>
+        <div class="input-prefix"><span style="left:10px">%</span><input type="number" id="cogs-pct" placeholder="0" value="" min="0" max="100" oninput="calc()" style="padding-left:28px"></div>
+        <span class="hint">Direct costs to deliver the revenue (leave blank if savings/efficiency gain)</span>
+      </div>
+
+      <div class="field">
+        <label>Net revenue / gross profit</label>
+        <div id="net-rev-display" style="background:var(--accent-dim);border:1px solid var(--accent-mid);border-radius:6px;padding:10px 14px;font-family:var(--mono);font-size:14px;color:var(--accent)">—</div>
+        <span class="hint">Revenue minus COGS, per month at full run rate</span>
+      </div>
+
+      <div class="field">
+        <label>Analysis horizon (months)</label>
+        <input type="number" id="horizon" placeholder="60" value="60" min="12" max="240" oninput="calc()">
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results-card" id="results">
+    <div class="empty-state" id="empty">Enter cost and revenue figures above to see your ROI analysis.</div>
+  </div>
+
+</div>
+
+<script>
+function fmt(n, short) {
+  if (n === null || isNaN(n)) return '—';
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (short) {
+    if (abs >= 1e6) return sign + '$' + (abs/1e6).toFixed(1) + 'M';
+    if (abs >= 1e3) return sign + '$' + (abs/1e3).toFixed(1) + 'K';
+    return sign + '$' + abs.toFixed(0);
+  }
+  return sign + '$' + abs.toLocaleString('en-US', {maximumFractionDigits: 0});
+}
+
+function fmtTime(months) {
+  if (months === null) return 'Never';
+  if (months < 1) return '< 1 mo';
+  if (months < 12) return Math.round(months) + ' mo';
+  const yrs = Math.floor(months / 12);
+  const mo = Math.round(months % 12);
+  return mo > 0 ? `${yrs}y ${mo}mo` : `${yrs} yr${yrs>1?'s':''}`;
+}
+
+function buildMonthly(maxM) {
+  const upfront  = parseFloat(document.getElementById('cost-upfront').value) || 0;
+  const costMo   = parseFloat(document.getElementById('cost-monthly').value) || 0;
+  const costStart= parseInt(document.getElementById('cost-start').value) || 1;
+  const costDur  = parseInt(document.getElementById('cost-duration').value) || 36;
+  const perpetual= document.getElementById('perpetual').checked;
+  const revMo    = parseFloat(document.getElementById('rev-monthly').value) || 0;
+  const revStart = parseInt(document.getElementById('rev-start').value) || 1;
+  const revRamp  = parseInt(document.getElementById('rev-ramp').value) || 0;
+  const revType  = document.getElementById('rev-type').value;
+  const cogsPct  = parseFloat(document.getElementById('cogs-pct').value);
+  const cogsRate = isNaN(cogsPct) ? 0 : Math.min(cogsPct, 100) / 100;
+
+  let cum = 0;
+  const series = [];
+
+  for (let m = 1; m <= maxM; m++) {
+    // costs
+    let costThisMonth = (m === 1 ? upfront : 0);
+    const inCostWindow = perpetual ? m >= costStart : (m >= costStart && m < costStart + costDur);
+    if (inCostWindow) costThisMonth += costMo;
+
+    // revenue (gross)
+    let revGross = 0;
+    if (m >= revStart) {
+      if (revType === 'onetime') {
+        if (m === revStart) revGross = revMo;
+      } else {
+        const mosSinceStart = m - revStart;
+        const rampFactor = revRamp > 0 ? Math.min(1, mosSinceStart / revRamp) : 1;
+        revGross = revMo * rampFactor;
+      }
+    }
+    const revThisMonth = revGross * (1 - cogsRate);
+
+    const net = revThisMonth - costThisMonth;
+    cum += net;
+    series.push({ m, net, cum, cost: costThisMonth, rev: revThisMonth, revGross });
+  }
+  return series;
+}
+
+function findBreakeven(series) {
+  for (let i = 1; i < series.length; i++) {
+    if (series[i-1].cum < 0 && series[i].cum >= 0) {
+      // interpolate
+      const frac = -series[i-1].cum / (series[i].cum - series[i-1].cum);
+      return series[i-1].m + frac;
+    }
+  }
+  if (series.length && series[series.length-1].cum >= 0 && series[0].cum >= 0) return 0;
+  return null;
+}
+
+function calc() {
+  const maxM = parseInt(document.getElementById('horizon').value) || 60;
+  const costUpfront = parseFloat(document.getElementById('cost-upfront').value) || 0;
+  const costMo = parseFloat(document.getElementById('cost-monthly').value) || 0;
+  const revMo = parseFloat(document.getElementById('rev-monthly').value) || 0;
+  const cogsPct  = parseFloat(document.getElementById('cogs-pct').value);
+  const cogsRate = isNaN(cogsPct) ? 0 : Math.min(cogsPct, 100) / 100;
+  const perpetual = document.getElementById('perpetual').checked;
+  const label = document.getElementById('inv-label').value.trim();
+  const submitterName    = document.getElementById('submitter-name').value.trim();
+  const submitterCompany = document.getElementById('submitter-company').value.trim();
+  const bizProblem  = document.getElementById('biz-problem').value.trim();
+  const bizSolution = document.getElementById('biz-solution').value.trim();
+  const bizRisks    = document.getElementById('biz-risks').value.trim();
+
+  // Update net revenue display
+  const netRevEl = document.getElementById('net-rev-display');
+  if (revMo > 0 && cogsRate > 0) {
+    const netMo = revMo * (1 - cogsRate);
+    netRevEl.textContent = fmt(netMo, false) + '/mo  (' + (100 - cogsPct).toFixed(1) + '% margin)';
+  } else if (revMo > 0) {
+    netRevEl.textContent = fmt(revMo, false) + '/mo  (no COGS entered)';
+  } else {
+    netRevEl.textContent = '—';
+  }
+
+  // Gray out cost duration if perpetual
+  document.getElementById('cost-duration').disabled = perpetual;
+  document.getElementById('cost-duration').style.opacity = perpetual ? '0.35' : '1';
+
+  const hasData = costUpfront > 0 || costMo > 0 || revMo > 0;
+  const resultsEl = document.getElementById('results');
+
+  if (!hasData) {
+    resultsEl.innerHTML = '<div class="empty-state" id="empty">Enter cost and revenue figures above to see your ROI analysis.</div>';
+    return;
+  }
+
+  const series = buildMonthly(maxM);
+  const breakeven = findBreakeven(series);
+
+  // Horizon snapshots
+  const snapMonths = [6, 12, 24, 36, 60].filter(m => m <= maxM);
+  while (snapMonths.length < 5) snapMonths.push(maxM);
+  const snaps = snapMonths.map(m => {
+    const s = series.find(x => x.m === m) || series[series.length-1];
+    return { m, cum: s ? s.cum : 0 };
+  });
+
+  const totalCost = series.reduce((a,s) => a + s.cost, 0);
+  const totalRev  = series.reduce((a,s) => a + s.rev, 0);
+  const finalCum  = series[series.length-1]?.cum || 0;
+  const roiPct    = totalCost > 0 ? ((totalRev - totalCost) / totalCost * 100) : null;
+
+  // Pill
+  let pillClass = '', pillText = '';
+  if (breakeven === 0) { pillClass=''; pillText='Already positive'; }
+  else if (breakeven === null) { pillClass='never'; pillText='No breakeven in window'; }
+  else { pillClass=''; pillText='Breaks even ' + fmtTime(breakeven); }
+
+  const perpetualPill = perpetual
+    ? `<div style="font-family:var(--mono);font-size:11px;padding:4px 12px;border-radius:100px;background:rgba(240,168,74,0.12);border:1px solid rgba(240,168,74,0.3);color:var(--warning)">⚠ Perpetual cost</div>`
+    : '';
+
+  // Chart
+  const vals = series.map(s => s.cum);
+  const minV = Math.min(0, ...vals);
+  const maxV = Math.max(0, ...vals);
+  const range = maxV - minV || 1;
+  const W = 800, H = 130, padL = 10, padR = 10, padT = 10, padB = 10;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+
+  function px(m) { return padL + ((m-1)/(series.length-1||1))*chartW; }
+  function py(v) { return padT + chartH - ((v-minV)/range)*chartH; }
+
+  const zeroY = py(0);
+
+  // Build path
+  let posPath = '', negPath = '';
+  for (let i = 0; i < series.length; i++) {
+    const x = px(series[i].m);
+    const y = py(series[i].cum);
+    if (i === 0) { posPath += `M${x},${y}`; negPath += `M${x},${y}`; }
+    else { posPath += `L${x},${y}`; negPath += `L${x},${y}`; }
+  }
+
+  // Fill areas
+  const firstX = px(series[0].m);
+  const lastX  = px(series[series.length-1].m);
+
+  // Breakeven line
+  let bevenLine = '';
+  if (breakeven !== null && breakeven > 0) {
+    const bx = padL + ((breakeven-1)/(series.length-1||1))*chartW;
+    bevenLine = `<line x1="${bx}" y1="${padT}" x2="${bx}" y2="${padT+chartH}" stroke="rgba(200,240,74,0.4)" stroke-width="1" stroke-dasharray="4,3"/>`;
+  }
+
+  const horizonSnapsHtml = snaps.map((s, i) => {
+    const pos = s.cum >= 0;
+    const near = breakeven !== null && Math.abs(s.m - breakeven) < 1;
+    return `<div class="horizon-col${near ? ' is-breakeven' : ''}">
+      <div class="horizon-label">Mo ${s.m}</div>
+      <div class="horizon-value ${pos?'pos':'neg'}">${fmt(s.cum, true)}</div>
+      <div class="horizon-sub">${pos ? 'net gain' : 'net cost'}</div>
+    </div>`;
+  }).join('');
+
+  const hasBiz = bizProblem || bizSolution || bizRisks;
+  const bizHtml = hasBiz ? `
+    <div class="biz-summary">
+      <div class="biz-block">
+        <div class="biz-block-label">Problem</div>
+        <div class="biz-block-text">${bizProblem || '<span style="opacity:0.35">—</span>'}</div>
+      </div>
+      <div class="biz-block">
+        <div class="biz-block-label">Solution</div>
+        <div class="biz-block-text">${bizSolution || '<span style="opacity:0.35">—</span>'}</div>
+      </div>
+      <div class="biz-block">
+        <div class="biz-block-label">Assumptions / Risks</div>
+        <div class="biz-block-text">${bizRisks || '<span style="opacity:0.35">—</span>'}</div>
+      </div>
+    </div>` : '';
+
+  const submitterLine = submitterName
+    ? `<div style="font-family:var(--mono);font-size:11px;color:var(--muted)">${submitterName}${submitterCompany ? ' · ' + submitterCompany : ''}</div>`
+    : '';
+
+  resultsEl.innerHTML = `
+    <div class="results-header">
+      <div class="results-title" style="flex-direction:column;align-items:flex-start;gap:4px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;flex-shrink:0"></span>${label || 'ROI Analysis'}</div>
+        ${submitterLine}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+        ${perpetualPill}
+        <div class="breakeven-pill ${pillClass}">${pillText}</div>
+      </div>
+    </div>
+
+    ${bizHtml}
+
+    <div class="horizons">${horizonSnapsHtml}</div>
+
+    <div class="chart-wrap">
+      <div class="chart-label">Cumulative net position over ${maxM} months</div>
+      <svg id="chart-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="posGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#c8f04a" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="#c8f04a" stop-opacity="0.02"/>
+          </linearGradient>
+          <linearGradient id="negGrad" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stop-color="#f04a6a" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="#f04a6a" stop-opacity="0.02"/>
+          </linearGradient>
+          <clipPath id="aboveZero">
+            <rect x="${padL}" y="${padT}" width="${chartW}" height="${Math.max(0,zeroY-padT)}"/>
+          </clipPath>
+          <clipPath id="belowZero">
+            <rect x="${padL}" y="${zeroY}" width="${chartW}" height="${Math.max(0,padT+chartH-zeroY)}"/>
+          </clipPath>
+        </defs>
+        <line x1="${padL}" y1="${zeroY}" x2="${padL+chartW}" y2="${zeroY}" stroke="#232636" stroke-width="1"/>
+        <path d="${negPath}L${lastX},${zeroY}L${firstX},${zeroY}Z" fill="url(#negGrad)" clip-path="url(#belowZero)"/>
+        <path d="${posPath}L${lastX},${zeroY}L${firstX},${zeroY}Z" fill="url(#posGrad)" clip-path="url(#aboveZero)"/>
+        ${bevenLine}
+        <path d="${negPath}" fill="none" stroke="#f04a6a" stroke-width="1.5" stroke-opacity="0.7" clip-path="url(#belowZero)"/>
+        <path d="${posPath}" fill="none" stroke="#c8f04a" stroke-width="2" clip-path="url(#aboveZero)"/>
+      </svg>
+    </div>
+
+    <div class="summary-row" style="grid-template-columns:repeat(4,1fr)">
+      <div class="summary-item">
+        <div class="summary-label">Total invested (${maxM} mo)</div>
+        <div class="summary-val neg">${fmt(totalCost, true)}</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Total net return (${maxM} mo)</div>
+        <div class="summary-val pos">${fmt(totalRev, true)}</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Net position at mo ${maxM}</div>
+        <div class="summary-val ${finalCum>=0?'pos':'neg'}">${fmt(finalCum, true)}</div>
+      </div>
+      <div class="summary-item" style="border-right:none">
+        <div class="summary-label">ROI at mo ${maxM}</div>
+        <div class="summary-val ${roiPct === null ? '' : roiPct >= 0 ? 'pos' : 'neg'}">${roiPct === null ? '—' : (roiPct >= 0 ? '+' : '') + roiPct.toFixed(1) + '%'}</div>
+      </div>
+    </div>
+  `;
+}
+
+// Init
+calc();
+</script>
+</body>
+</html>
